@@ -12,9 +12,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "bcrypt": "^5.1.0",
+    "bcrypt": "^5.1.1",
     "express": "^4.18.2",
-    "mongoose": "^7.0.3"
+    "mongodb-connection-string-url": "^3.0.1",
+    "mongoose": "^7.0.3",
+    "node-fetch": "^3.3.2",
+    "tr46": "^5.0.0",
+    "whatwg-url": "^14.1.0"
   },
   "devDependencies": {
     "dotenv": "^16.4.7",
