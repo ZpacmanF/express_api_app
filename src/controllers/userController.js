@@ -8,7 +8,6 @@ const userController = {
         try {
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
-                console.log('Validation Errors:', errors.array());
                 return res.status(400).json({ errors: errors.array() });
             }
 
@@ -66,35 +65,34 @@ const userController = {
 
     async updateUser(req, res) {
         try {
-            if (req.user.role !== 'admin' && req.user._id.toString() !== req.params.id) {
-                console.log(`User ${req.user._id} does not have permission to update user ${req.params.id}`);
-                return res.status(403).json({ message: 'Access denied' });
-            }
-
             if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
                 return res.status(400).json({ message: 'Invalid user ID format' });
             }
-
+    
+            if (req.user.role !== 'admin' && req.user._id.toString() !== req.params.id) {
+                console.log(`Access denied: User ${req.user._id} (role: ${req.user.role}) attempting to update user ${req.params.id}`);
+                return res.status(403).json({ message: 'Access denied' });
+            }
+    
             const errors = validationResult(req);
             if (!errors.isEmpty()) {
                 console.log('Validation Errors:', errors.array());
                 return res.status(400).json({ errors: errors.array() });
             }
-
+    
+            const userToUpdate = await User.findById(req.params.id);
+            if (!userToUpdate) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+    
             const sanitizedData = sanitize(req.body);
-            console.log('Sanitized Data:', sanitizedData);
-
+    
             const user = await User.findByIdAndUpdate(
                 req.params.id,
                 sanitizedData,
                 { new: true, runValidators: true }
             ).select('-password');
-
-            if (!user) {
-                return res.status(404).json({ message: 'User not found' });
-            }
-
-            console.log(`User updated: ${user._id}`);
+    
             res.status(200).json(user);
         } catch (error) {
             console.error(`Error updating user: ${error.message}`);
@@ -113,7 +111,6 @@ const userController = {
                 return res.status(404).json({ message: 'User not found' });
             }
 
-            console.log(`User deleted: ${user._id}`);
             res.status(200).json({ message: 'User deleted successfully' });
         } catch (error) {
             console.error(`Error deleting user: ${error.message}`);
