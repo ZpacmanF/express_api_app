@@ -15,11 +15,8 @@ router.post('/', userValidation, userController.createUser);
 router.use(protect);
 
 router.get('/', userController.getAllUsers);
-
-router.get('/:id', userController.getUserById);
-
-router.put('/:id', userValidation, checkPermission, userController.updateUser);
-
+router.get('/:id', checkPermission, userController.getUserById);
+router.put('/:id', checkPermission, userValidation, userController.updateUser); 
 router.delete('/:id', checkPermission, userController.deleteUser);
 
 module.exports = router;
