@@ -12,20 +12,19 @@ const protect = async (req, res, next) => {
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        if (!mongoose.Types.ObjectId.isValid(decoded.id)) {
-            console.log(`Invalid user ID: ${decoded.id}`);
-            return res.status(401).json({ message: 'Invalid user ID in token' });
-        }
-
         const user = await User.findById(decoded.id).select('-password');
 
         if (!user) {
-            console.log(`User not found with ID: ${decoded.id}`);
             return res.status(401).json({ message: 'User not found' });
         }
 
-        req.user = user;
+        req.user = {
+            _id: user._id,
+            role: user.role,
+            email: user.email,
+            name: user.name
+        };
+
         next();
     } catch (error) {
         console.error('Authentication error:', error);
