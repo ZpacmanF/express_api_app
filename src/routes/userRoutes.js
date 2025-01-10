@@ -3,6 +3,7 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const { protect, checkPermission } = require('../middleware/authMiddleware');
 const { check } = require('express-validator');
+const{ cacheUsers } = require('../config/redis');
 
 const userValidation = [
     check('name').trim().notEmpty(),
@@ -14,7 +15,7 @@ router.post('/', userValidation, userController.createUser);
 
 router.use(protect);
 
-router.get('/', userController.getAllUsers);
+router.get('/', cacheUsers, userController.getAllUsers);
 router.get('/:id', checkPermission, userController.getUserById);
 router.put('/:id', checkPermission, userValidation, userController.updateUser); 
 router.delete('/:id', checkPermission, userController.deleteUser);
