@@ -4,30 +4,30 @@ const redis = new Redis({
   port: process.env.REDIS_PORT || 6379
 });
 
-const cachePatentSearch = async (req, res, next) => {
-  const key = `patent:search:${req.query.query || ''}:${req.query.category || ''}`;
-  try {
-    const cached = await redis.get(key);
-    if (cached) {
-      console.log(`Cache hit for key: ${key}`);
-      return res.json(JSON.parse(cached));
+const cacheUsers = async (req, res, next) => {
+    const key = `users:all`;
+
+    try {
+        const cached = await redis.get(key);
+        if (cached) {
+            return res.json(JSON.parse(cached));
+        }
+
+        res.originalJson = res.json;
+        res.json = (data) => {
+
+            redis.setex(key, process.env.CACHE_EXPIRATION || 3600, JSON.stringify(data))
+                .then(() => console.log('Cache atualizado com sucesso'))
+                .catch((err) => console.error('Erro ao atualizar cache:', err));
+
+            res.originalJson(data);
+        };
+
+        next();
+    } catch (error) {
+        console.error('Erro no middleware de cache:', error);
+        next();
     }
-    res.originalJson = res.json;
-    res.json = (data) => {
-      redis.setex(key, process.env.CACHE_EXPIRATION || 3600, JSON.stringify(data))
-        .then(() => console.log(`Cache set for key: ${key}`))
-        .catch((err) => console.error(`Error setting cache for key: ${key}`, err));
-      res.originalJson(data);
-    };
-    next();
-  } catch (error) {
-    console.error(`Error accessing cache for key: ${key}`, error);
-    next();
-  }
 };
 
-const closeConnection = async () => {
-  await redis.quit();
-};
-
-module.exports = { redis, cachePatentSearch, closeConnection };
+module.exports = { redis, cacheUsers };
