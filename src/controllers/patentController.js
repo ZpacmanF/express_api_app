@@ -31,24 +31,22 @@ const patentController = {
 
     async searchPatents(req, res) {
         try {
-            const { query = '', category } = sanitize(req.query);
+            const { query = '' } = sanitize(req.query);
             const searchCriteria = {};
-
+    
             if (query) {
-                searchCriteria.$text = { $search: query };
+                searchCriteria.$or = [
+                    { name: { $regex: query, $options: 'i' } },
+                    { description: { $regex: query, $options: 'i' } }
+                ];
             }
             
-            if (category) {
-                searchCriteria.category = category;
-            }
-
             const patents = await Patent.find(searchCriteria)
                 .populate('createdBy', 'name email');
-
-            logger.info('Search performed successfully');
+                
             res.status(200).json(patents);
         } catch (error) {
-            logger.error('Search error: ' + error.message);
+            console.error('Search error:', error);
             res.status(500).json({
                 message: 'Error searching patents',
                 error: error.message
