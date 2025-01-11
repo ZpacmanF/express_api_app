@@ -104,3 +104,11 @@
 {"level":"info","message":"Search performed successfully"}
 {"level":"info","message":"Search performed successfully"}
 {"level":"info","message":"Search performed successfully"}
+{"level":"warn","message":"Patent not found or unauthorized"}
+{"level":"info","message":"Patent deleted: 67827233187538148b8a5b23"}
+{"level":"warn","message":"Patent not found or unauthorized"}
+{"level":"info","message":"Patent deleted: 678274b5187538148b8a5b6b"}
+{"level":"warn","message":"Patent not found"}
+{"level":"warn","message":"Patent not found"}
+{"level":"info","message":"Patent created: 67827de7a14a259d38ae5df7"}
+{"level":"info","message":"Patent deleted: 67827de7a14a259d38ae5df7"}
