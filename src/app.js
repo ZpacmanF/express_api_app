@@ -7,6 +7,10 @@ const connectDB = require('./config/database');
 const swaggerUi = require('swagger-ui-express');
 const specs = require('./config/swagger');
 
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const patentRoutes = require('./routes/patentRoutes');
+
 const app = express();
 
 connectDB();
