@@ -16,15 +16,18 @@ const app = express();
 
 connectDB();
 
-// Configuração do Helmet com exceções para o Swagger
 app.use(
-    helmet.contentSecurityPolicy({
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", "data:", "https:"],
+    helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'", "cdnjs.cloudflare.com"],
+                scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "cdnjs.cloudflare.com"],
+                styleSrc: ["'self'", "'unsafe-inline'", "cdnjs.cloudflare.com"],
+                imgSrc: ["'self'", "data:", "https:"],
+            },
         },
+        crossOriginEmbedderPolicy: false,
+        crossOriginResourcePolicy: false
     })
 );
 
@@ -33,15 +36,17 @@ app.use(compression());
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10kb' }));
 
-// Configuração do Swagger UI
 const swaggerOptions = {
+    customCssUrl: 'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui.min.css',
+    customJs: [
+        'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-bundle.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/4.15.5/swagger-ui-standalone-preset.js'
+    ],
     swaggerOptions: {
-        url: '/api/docs/swagger.json',  // Especifica onde encontrar o arquivo swagger.json
         persistAuthorization: true
     }
 };
 
-// Rota para servir o arquivo swagger.json
 app.get('/api/docs/swagger.json', (req, res) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(specs);

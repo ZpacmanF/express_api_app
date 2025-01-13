@@ -10,10 +10,14 @@ const options = {
       description: 'API for managing patents and users'
     },
     servers: [
-      {
-        url: process.env.DEV_SERVER_URL,
-        description: 'Development server'
-      }
+        {
+            url: process.env.NODE_ENV === 'production'
+                ? 'https://express-api-fzftl8ybq-zpacmanfs-projects.vercel.app/api'
+                : 'http://localhost:3000/',
+            description: process.env.NODE_ENV === 'production' 
+                ? 'Production server' 
+                : 'Development server'
+        }
     ],
     components: {
       schemas: {
