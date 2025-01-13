@@ -8,6 +8,9 @@ const protect = async (req, res, next) => {
 
         if (!token) {
             console.log('Access attempt without token');
+            if (req.accepts('html')) {
+                return res.redirect('/login');
+            }
             return res.status(401).json({ message: 'Not authorized, no token' });
         }
 
@@ -15,6 +18,9 @@ const protect = async (req, res, next) => {
         const user = await User.findById(decoded.id).select('-password');
 
         if (!user) {
+            if (req.accepts('html')) {
+                return res.redirect('/login');
+            }
             return res.status(401).json({ message: 'User not found' });
         }
 
@@ -28,6 +34,9 @@ const protect = async (req, res, next) => {
         next();
     } catch (error) {
         console.error('Authentication error:', error);
+        if (req.accepts('html')) {
+            return res.redirect('/login');
+        }
         return res.status(401).json({ message: 'Not authorized, token failed' });
     }
 };
