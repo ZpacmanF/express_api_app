@@ -13,7 +13,7 @@ const options = {
     servers: [
       {
         url: process.env.NODE_ENV === 'production'
-          ? 'https://express-api-fzftl8ybq-zpacmanfs-projects.vercel.app'
+          ? 'https://express-api-app-alpha.vercel.app/api'
           : 'http://localhost:3000',
         description: process.env.NODE_ENV === 'production' 
           ? 'Production server' 
