@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const rateLimit = require('express-rate-limit');
 const { validationResult, check } = require('express-validator');
 const User = require('../models/userModel');
