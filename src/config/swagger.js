@@ -8,7 +8,7 @@ const options = {
     info: {
       title: 'Patents API',
       version: '1.0.0',
-      description: 'API for managing patents and users'
+      description: 'API for managing patents and users with authentication, caching, and rate limiting'
     },
     servers: [
       {
@@ -24,23 +24,67 @@ const options = {
       schemas: {
         Patent: {
           type: 'object',
+          required: ['name', 'description', 'category', 'createdBy'],
           properties: {
-            name: { type: 'string', description: 'Patent name' },
-            description: { type: 'string', description: 'Patent description' },
-            category: { type: 'string', description: 'Patent category' },
-            createdBy: { type: 'string', description: 'User ID who created the Patent' },
-            createdAt: { type: 'string', format: 'date-time' }
-          },
-          required: ['name', 'description', 'category']
+            name: { 
+              type: 'string', 
+              description: 'Patent name',
+              minLength: 1 
+            },
+            description: { 
+              type: 'string', 
+              description: 'Patent description',
+              minLength: 1 
+            },
+            category: { 
+              type: 'string', 
+              description: 'Patent category',
+              minLength: 1 
+            },
+            createdBy: { 
+              type: 'string', 
+              description: 'MongoDB ObjectId of the user who created the patent',
+              pattern: '^[0-9a-fA-F]{24}$'
+            },
+            createdAt: { 
+              type: 'string', 
+              format: 'date-time',
+              description: 'Automatically set to current date'
+            }
+          }
         },
         User: {
           type: 'object',
+          required: ['name', 'email', 'password'],
           properties: {
-            name: { type: 'string' },
-            email: { type: 'string', format: 'email' },
-            password: { type: 'string', format: 'password' },
-            role: { type: 'string', enum: ['user', 'admin'] },
-            createdAt: { type: 'string', format: 'date-time' }
+            name: { 
+              type: 'string',
+              description: 'User name',
+              minLength: 1
+            },
+            email: { 
+              type: 'string', 
+              format: 'email',
+              description: 'Unique email address',
+              pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'
+            },
+            password: { 
+              type: 'string',
+              format: 'password',
+              description: 'Will be hashed before storage',
+              minLength: 6
+            },
+            role: { 
+              type: 'string', 
+              enum: ['user', 'admin'],
+              default: 'user',
+              description: 'User role, defaults to "user"'
+            },
+            createdAt: { 
+              type: 'string', 
+              format: 'date-time',
+              description: 'Automatically set to current date'
+            }
           }
         }
       },
@@ -62,99 +106,88 @@ const options = {
 
 /**
  * @swagger
- * components:
- *   schemas:
- *     LoginInput:
- *       type: object
- *       required:
- *         - email
- *         - password
- *       properties:
- *         email:
- *           type: string
- *           example: user@example.com
- *         password:
- *           type: string
- *           example: password123
- *     Patent:
- *       type: object
- *       required:
- *         - name
- *         - description
- *         - category
- *       properties:
- *         name:
- *           type: string
- *           example: Sample Patent
- *         description:
- *           type: string
- *           example: Detailed description of the patent
- *         category:
- *           type: string
- *           example: Technology
- *     User:
- *       type: object
- *       required:
- *         - name
- *         - email
- *         - password
- *       properties:
- *         name:
- *           type: string
- *           example: John Doe
- *         email:
- *           type: string
- *           format: email
- *           example: john@example.com
- *         password:
- *           type: string
- *           example: securepass123
- *         role:
- *           type: string
- *           enum: [user, admin]
- *           example: user
- * 
  * /api/auth/login:
  *   post:
  *     tags: [Authentication]
  *     summary: Login to the system
+ *     description: Login with rate limiting (5 attempts per 15 minutes)
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/LoginInput'
- *           examples:
- *             userLogin:
- *               value:
- *                 email: user@example.com
- *                 password: password123
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: password123
  *     responses:
  *       200:
  *         description: Login successful
  *         content:
  *           application/json:
- *             example:
- *               token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
- *               user:
- *                 id: "123"
- *                 name: "John Doe"
- *                 email: "user@example.com"
- *                 role: "user"
- *       401:
- *         description: Invalid credentials
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: JWT token
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       pattern: '^[0-9a-fA-F]{24}$'
+ *                     name:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                       format: email
+ *                     role:
+ *                       type: string
+ *                       enum: [user, admin]
  * 
- * /api/auth/validate:
+ * /api/patents/search:
  *   get:
- *     tags: [Authentication]
- *     summary: Validate JWT token
+ *     tags: [Patents]
+ *     summary: Search Patents
+ *     description: Performs text search on name and description fields using MongoDB text index
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: query
+ *         schema:
+ *           type: string
+ *         description: Text search query (uses MongoDB text index)
  *     responses:
  *       200:
- *         description: Token is valid
- *       401:
- *         description: Invalid token
+ *         description: List of Patents
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 allOf:
+ *                   - $ref: '#/components/schemas/Patent'
+ *                   - type: object
+ *                     properties:
+ *                       createdBy:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                           email:
+ *                             type: string
  * 
  * /api/patents:
  *   post:
@@ -167,178 +200,62 @@ const options = {
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Patent'
+ *             type: object
+ *             required: [name, description, category]
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 1
+ *               description:
+ *                 type: string
+ *                 minLength: 1
+ *               category:
+ *                 type: string
+ *                 minLength: 1
  *     responses:
  *       201:
  *         description: Patent created successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Patent'
+ *               allOf:
+ *                 - $ref: '#/components/schemas/Patent'
+ *                 - type: object
+ *                   properties:
+ *                     _id:
+ *                       type: string
+ *                       pattern: '^[0-9a-fA-F]{24}$'
  * 
- * api/patents/search:
+ * /api/users:
  *   get:
- *     tags: [Patents]
- *     summary: Search Patents
+ *     tags: [Users]
+ *     summary: Get all users (admin only, with Redis cache)
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *       - in: query
- *         name: query
- *         schema:
- *           type: string
- *         description: Search term
- *         example: technology
- *       - in: query
- *         name: category
- *         schema:
- *           type: string
- *         description: Filter by category
- *         example: Tech
  *     responses:
  *       200:
- *         description: List of Patents
- *         content:
- *           application/json:
- *             example:
- *               - id: "1"
- *                 name: "Patent 1"
- *                 description: "Description"
- *                 category: "Tech"
- * 
- * /api/patents/{id}:
- *   get:
- *     tags: [Patents]
- *     summary: Get Patent by ID
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         example: "123"
- *     responses:
- *       200:
- *         description: Patent details
+ *         description: List of users (cached for 1 hour)
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Patent'
- *   put:
- *     tags: [Patents]
- *     summary: Update Patent
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/Patent'
- *     responses:
- *       200:
- *         description: Patent updated
- *   delete:
- *     tags: [Patents]
- *     summary: Delete Patent
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Patent deleted
- * 
- * /api/users:
- *   post:
- *     tags: [Users]
- *     summary: Create new user
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/User'
- *     responses:
- *       201:
- *         description: User created
- *   get:
- *     tags: [Users]
- *     summary: Get all users (admin only)
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: List of users
- *         content:
- *           application/json:
- *             example:
- *               - id: "1"
- *                 name: "John Doe"
- *                 email: "john@example.com"
- *                 role: "user"
- * 
- * /api/users/{id}:
- *   get:
- *     tags: [Users]
- *     summary: Get user by ID
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: User details
- *   put:
- *     tags: [Users]
- *     summary: Update user
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/User'
- *     responses:
- *       200:
- *         description: User updated
- *   delete:
- *     tags: [Users]
- *     summary: Delete user
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: User deleted
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   _id:
+ *                     type: string
+ *                     pattern: '^[0-9a-fA-F]{24}$'
+ *                   name:
+ *                     type: string
+ *                   email:
+ *                     type: string
+ *                     format: email
+ *                   role:
+ *                     type: string
+ *                     enum: [user, admin]
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
  */
 
 const specs = swaggerJsdoc(options);

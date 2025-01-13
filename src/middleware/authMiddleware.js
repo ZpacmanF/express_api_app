@@ -40,4 +40,15 @@ const checkPermission = (req, res, next) => {
     next();  
 };
 
-module.exports = { protect, checkPermission };
+const isAdmin = (req, res, next) => {
+    if (req.user && req.user.role === 'admin') {
+        next();
+    } else {
+        console.log(`Access denied for non-admin user ${req.user._id}`);
+        return res.status(403).json({ 
+            message: 'Access denied. Admin privileges required.' 
+        });
+    }
+};
+
+module.exports = { protect, checkPermission, isAdmin };

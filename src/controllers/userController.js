@@ -34,15 +34,20 @@ const userController = {
     async getAllUsers(req, res) {
         try {
             if (req.user.role !== 'admin') {
-                console.log(`Access denied for user ${user._id}`);
-                return res.status(403).json({ message: 'Access denied' });
+                return res.status(403).json({ 
+                    message: 'Access denied. Admin privileges required.' 
+                });
             }
-
+    
             const users = await User.find({}).select('-password');
             res.status(200).json(users);
+            
         } catch (error) {
             console.error(`Error fetching users: ${error.message}`);
-            res.status(500).json({ message: 'Error fetching users' });
+            res.status(500).json({ 
+                message: 'Error fetching users',
+                error: error.message 
+            });
         }
     },
 
