@@ -17,7 +17,8 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: [true, 'Please provide a password'],
-        minlength: [6, 'The password must be at least 6 characters long']
+        minlength: [6, 'The password must be at least 6 characters long'],
+        select: false
     },
     role: {
         type: String,
@@ -40,13 +41,25 @@ userSchema.pre('save', async function(next) {
         this.password = await bcrypt.hash(this.password, salt);
         next();
     } catch (error) {
+        console.error('Error hashing password:', error);
         next(error);
     }
 });
 
 userSchema.methods.matchPassword = async function(enteredPassword) {
-    if (!this.password) return false;
-    return await bcrypt.compare(enteredPassword, this.password);
+    try {
+        if (!this.password) {
+            return false;
+        }
+        
+        
+        const isMatch = await bcrypt.compare(enteredPassword, this.password);
+        
+        return isMatch;
+    } catch (error) {
+        console.error('Error in matchPassword:', error);
+        return false;
+    }
 };
 
 userSchema.methods.toJSON = function() {
@@ -55,6 +68,6 @@ userSchema.methods.toJSON = function() {
     return user;
 };
 
-const User = mongoose.model('users', userSchema, 'users');
+const User = mongoose.model('users', userSchema);
 
 module.exports = User;

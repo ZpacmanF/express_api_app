@@ -15,7 +15,8 @@ router.post('/', userValidation, userController.createUser);
 
 router.use(protect);
 
-router.get('/', protect, isAdmin, cacheUsers, userController.getAllUsers);
+router.post('/', userValidation, userController.createUser);
+router.get('/', isAdmin, cacheUsers, userController.getAllUsers);
 router.get('/:id', checkPermission, userController.getUserById);
 router.put('/:id', checkPermission, userValidation, userController.updateUser); 
 router.delete('/:id', checkPermission, userController.deleteUser);

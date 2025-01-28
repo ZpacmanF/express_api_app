@@ -25,10 +25,16 @@ const authController = {
             }
 
             const { email, password } = req.body;
-            const user = await User.findOne({ email });
+            const user = await User.findOne({ email }).select('+password');
+            
+            if (!user) {
+                console.log('User not found with email:', email);
+                return res.status(401).json({ message: 'Invalid credentials' });
+            }
 
-            if (!user || !(await user.matchPassword(password))) {
-                console.log(`Failed login attempt for email: ${email}`);
+            const isPasswordValid = await user.matchPassword(password);
+
+            if (!isPasswordValid) {
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
 
@@ -37,20 +43,19 @@ const authController = {
                 process.env.JWT_SECRET,
                 { expiresIn: '1h' }
             );
+            const userResponse = user.toJSON();
 
-            console.log(`Successful login for user: ${user._id}`);
             res.json({
                 token,
-                user: {
-                    id: user._id,
-                    name: user.name,
-                    email: user.email,
-                    role: user.role
-                }
+                user: userResponse
             });
         } catch (error) {
-            console.error(`Login error: ${error.message}`);
-            res.status(500).json({ message: 'Server error' });
+            console.error('Login error:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
+            res.status(500).json({ message: 'Server error', error: error.message });
         }
     },
 
@@ -62,6 +67,7 @@ const authController = {
             }
 
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
             const user = await User.findById(decoded.id).select('-password');
             
             if (!user) {
@@ -70,7 +76,11 @@ const authController = {
 
             res.json({ valid: true, user });
         } catch (error) {
-            console.error(`Token validation error: ${error.message}`);
+            console.error('Token validation error:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
             res.status(401).json({ message: 'Invalid token' });
         }
     }
